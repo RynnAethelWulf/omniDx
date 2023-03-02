@@ -1,0 +1,40 @@
+# GitHub Actions workflow for Salesforce CI/CD deployment
+
+name: Salesforce Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Install Salesforce CLI
+      run: |
+        wget https://developer.salesforce.com/media/salesforce-cli/sfdx-linux-amd64.tar.xz
+        mkdir sfdx-cli
+        tar xJf sfdx-linux-amd64.tar.xz -C sfdx-cli --strip-components 1
+        echo "export PATH=$PWD/sfdx-cli/bin:$PATH" >> $GITHUB_ENV
+        source $GITHUB_ENV
+        sfdx --version
+
+    - name: Authenticate to Dev Hub
+      env:
+        SFDX_CLIENT_ID: ${{ secrets.SFDX_CLIENT_ID }}
+        SFDX_JWT_KEY: ${{ secrets.SFDX_JWT_KEY }}
+        SFDX_USERNAME: ${{ secrets.SFDX_USERNAME }}
+      run: |
+        echo "$SFDX_JWT_KEY" | base64 --decode > jwt.key
+        sfdx force:auth:jwt:grant --clientid "$SFDX_CLIENT_ID" --jwtkeyfile jwt.key --username "$SFDX_USERNAME" --setdefaultdevhubusername -a DevHub
+
+    - name: Install Package
+      env:
+        SFDX_PACKAGE_ID: ${{ secrets.SFDX_PACKAGE_ID }}
+        SFDX_TARGET_ORG_ALIAS: ${{ secrets.SFDX_TARGET_ORG_ALIAS }}
+      run: |
+        sfdx force:package:install --package "$SFDX_PACKAGE_ID" --wait 10 --publishwait 10 -u "$SFDX_TARGET_ORG_ALIAS"
