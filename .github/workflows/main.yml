@@ -37,4 +37,6 @@ jobs:
         SFDX_PACKAGE_ID: ${{ secrets.SFDX_PACKAGE_ID }}
         SFDX_TARGET_ORG_ALIAS: ${{ secrets.SFDX_TARGET_ORG_ALIAS }}
       run: |
+
         sfdx force:package:install --package "$SFDX_PACKAGE_ID" --wait 10 --publishwait 10 -u "$SFDX_TARGET_ORG_ALIAS"
+
